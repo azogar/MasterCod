@@ -6,6 +6,7 @@ import java.sql.Date;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import manager.Manager;
 import model.Measurement;
@@ -48,7 +49,6 @@ public class ResourceObserverThread extends Thread {
 			Request request = Request.newGet();
 			request.setURI(uri);
 			request.setPayload("");
-			request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_XML);
 			request.getOptions().setObserve(1);
 			request.send();
 
@@ -62,22 +62,29 @@ public class ResourceObserverThread extends Thread {
 						String message = response.getPayloadString();
 						System.out.println("[ThreadObserver-" + hostname + "] PAYLOAD  " + message);
 				
-						JSONArray jsonmessage = new JSONArray(message);
+						JSONObject jsonmessage = new JSONObject(message);
 						
-						dbmanager.connetti();
-						if (dbmanager.isConnesso()) {
-							java.util.Calendar calendar = java.util.Calendar.getInstance();
-							java.util.Date utildate = calendar.getTime();
-							java.sql.Date sqldate = new Date(utildate.getTime());
-							
-							Measurement measurement = new Measurement(Integer.valueOf(0), deviceid, sqldate, String.valueOf(0));
-							//TODO accordarsi sulformato formatoso del json
-							
-							dbmanager.addMeasurement(measurement);		
+						if (jsonmessage.get("sample") instanceof JSONArray) {
+							JSONArray jsonarray = (JSONArray) jsonmessage.get("sample");
+							dbmanager.connetti();
+							for (int i = 0; i < jsonarray.length(); i++) {
+								if (dbmanager.isConnesso()) {
+									java.util.Calendar calendar = java.util.Calendar.getInstance();
+									java.util.Date utildate = calendar.getTime();
+									java.sql.Date sqldate = new Date(utildate.getTime());
+									
+									Measurement measurement = new Measurement(Integer.valueOf(0), deviceid, sqldate, String.valueOf(jsonarray.getJSONObject(i).get("value")));
+									
+									dbmanager.addMeasurement(measurement);		
+								} else {
+									System.err.println("[ThreadObserver-" + hostname + "] Db connection problems");	
+								}
+								
+							}
+							dbmanager.disconnetti();
 						} else {
-							System.err.println("[ThreadObserver-" + hostname + "] Db connection problems");	
+							//TODO errore non e' un array
 						}
-						dbmanager.disconnetti();
 					} else {	
 						System.err.println("[ThreadObserver-" + hostname + "] Request timed out");
 					}

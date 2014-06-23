@@ -8,13 +8,18 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.json.JSONObject;
+
 import manager.Manager;
+import model.Board;
+import model.Device;
 import model.Measurement;
 import ch.ethz.inf.vs.californium.CaliforniumLogger;
 import ch.ethz.inf.vs.californium.Utils;
 import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
 import ch.ethz.inf.vs.californium.coap.Request;
 import ch.ethz.inf.vs.californium.coap.Response;
+import ch.ethz.inf.vs.californium.server.resources.DiscoveryResource;
 import ch.ethz.inf.vs.scandium.ScandiumLogger;
 
 public class ExampleObserver {
@@ -71,25 +76,59 @@ public class ExampleObserver {
 		// discovery?
 		// se si creazione/aggiornamento db
 		
+		// serve hostname nella tabella board
+		Response response = null;
+		do {
+			try {
+				Request request = Request.newGet();
+				request.setURI(new URI("coap://[aaaa::c30c:0:0:8]:5683/.well-known/core"));
+				//request.setURI(new URI("coap://[aaaa::c30c:0:0:8]:5683/sensors/periodic_light"));
+				request.setPayload("");
+				request.send();
+				
+				System.out.println("Invio richiesta");
+				
+				response = request.waitForResponse(5000);
+				
+				if (response != null) {
+					System.out.println(Utils.prettyPrint(response));
+					System.out.println("[AAA] Time elapsed (ms): " + response.getRTT());
+					String message = response.getPayloadString();
+					System.out.println("[AAA] PAYLOAD -" + message + "-");
+			
+	
+				}
+				
+				
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} while (response == null);
+		
+		
 		// creazione thread osservatori		
-		
 		Manager dbmanager = new Manager();
-		
 		dbmanager.connetti();
 		if (dbmanager.isConnesso()) {
-			java.util.Calendar calendar = java.util.Calendar.getInstance();
-			java.util.Date utildate = calendar.getTime();
-			java.sql.Date sqldate = new Date(utildate.getTime());
-			
-			Measurement measurement = new Measurement(Integer.valueOf(0), Integer.valueOf(0), sqldate, String.valueOf(0));
-			//TODO accordarsi sulformato formatoso del json
-			
-			dbmanager.addMeasurement(measurement);
-			System.err.println(String.valueOf(measurement));	
+			for (Board board : dbmanager.getAllBoards()) {
+				for (Device device : dbmanager.getDeviceList(board.getId())) {
+					if (device.getUri().compareTo("boh") != 0) {
+	 					ResourceObserverThread observer = new ResourceObserverThread(device.getUri(), device.getUri(), device.getId());
+						observer.start();
+					}
+				}
+			}
 		} else {
-			System.err.println("[ThreadObserver-" +  "] Db connection problems");	
+			System.err.println("[Main] Db connection problems");	
 		}
 		dbmanager.disconnetti();
+		
+		
+
 
 	}
 
