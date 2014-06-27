@@ -2,6 +2,7 @@ package iit.cnr.smart.californium.observer;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.Date;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -9,7 +10,6 @@ import manager.DeviceUtil;
 import manager.Manager;
 import model.Board;
 import model.Device;
-import ch.ethz.inf.vs.californium.Utils;
 import ch.ethz.inf.vs.californium.coap.BlockOption;
 import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
 import ch.ethz.inf.vs.californium.coap.Request;
@@ -18,18 +18,15 @@ import ch.ethz.inf.vs.californium.network.Exchange;
 import ch.ethz.inf.vs.californium.server.resources.ResourceBase;
 
 public class HelloResource extends ResourceBase {
-    private int count;
-	
     public HelloResource() {
         super("hello");
         getAttributes().setTitle("Hello Resource");
-        count = 0;
     }
     
     @Override
     public void handleGET(Exchange exchange) {
     	String hostname = String.valueOf(exchange.getCurrentRequest().getSource()).substring(1);
-    	
+    	System.out.println(ExampleObserver.now() + " [HelloResource] Ricevuta richiesta di partenza da: " + hostname);
     	
     	// salvare il nuovo board nel db
     	Manager dbmanager = new Manager();
@@ -40,14 +37,16 @@ public class HelloResource extends ResourceBase {
 				Board board = new Board(0, hostname, "aula10", "defaultposition", "defaultdescprition", 1);
 				board_id = dbmanager.createBoard(board);
 			}
+	    	System.out.println(ExampleObserver.now() + " [HelloResource] Board con id: " + board_id + " Richiedo device");
 			
 	    	// chiedere device
 			Vector<Device> devices = askForDevices(hostname, board_id);
+			System.out.println(ExampleObserver.now() + " [HelloResource] Board id: " + board_id + " Trovati device: "+ devices.size());
 			for (Device device : devices) {
 				if (dbmanager.existIpDevice(device.getUri()) == null) {
-					dbmanager.createDevice(device);
+					Integer device_id = dbmanager.createDevice(device);
 					if (device.getActuator() == 0) {
-	 					ResourceObserverThread observer = new ResourceObserverThread(device.getUri(), device.getUri(), device.getId());
+	 					ResourceObserverThread observer = new ResourceObserverThread(device.getUri(), device.getUri(), device_id);
 						observer.start();
 					}
 				}
@@ -78,13 +77,9 @@ public class HelloResource extends ResourceBase {
 			response = request.waitForResponse();
 
 			if (response != null) {
-				System.out.println(Utils.prettyPrint(response));
-				System.out.println("[AAA] Time elapsed (ms): " + response.getRTT());
 				String message = response.getPayloadString();
-				System.out.println("[AAA] PAYLOAD -" + message + "-");
 				
 				StringTokenizer tokenizer = new StringTokenizer(message, ",");
-				
 				
 				while (tokenizer.hasMoreTokens()) {
 					String token = tokenizer.nextToken();
