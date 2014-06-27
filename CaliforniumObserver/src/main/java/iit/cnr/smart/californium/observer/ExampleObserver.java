@@ -6,6 +6,7 @@ import java.sql.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 
 import org.json.JSONObject;
@@ -16,9 +17,12 @@ import model.Device;
 import model.Measurement;
 import ch.ethz.inf.vs.californium.CaliforniumLogger;
 import ch.ethz.inf.vs.californium.Utils;
+import ch.ethz.inf.vs.californium.coap.BlockOption;
 import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
+import ch.ethz.inf.vs.californium.coap.OptionSet;
 import ch.ethz.inf.vs.californium.coap.Request;
 import ch.ethz.inf.vs.californium.coap.Response;
+import ch.ethz.inf.vs.californium.server.Server;
 import ch.ethz.inf.vs.californium.server.resources.DiscoveryResource;
 import ch.ethz.inf.vs.scandium.ScandiumLogger;
 
@@ -77,38 +81,11 @@ public class ExampleObserver {
 		// se si creazione/aggiornamento db
 		
 		// serve hostname nella tabella board
-		Response response = null;
-		do {
-			try {
-				Request request = Request.newGet();
-				request.setURI(new URI("coap://[aaaa::c30c:0:0:8]:5683/.well-known/core"));
-				//request.setURI(new URI("coap://[aaaa::c30c:0:0:8]:5683/sensors/periodic_light"));
-				request.setPayload("");
-				request.send();
-				
-				System.out.println("Invio richiesta");
-				
-				response = request.waitForResponse(5000);
-				
-				if (response != null) {
-					System.out.println(Utils.prettyPrint(response));
-					System.out.println("[AAA] Time elapsed (ms): " + response.getRTT());
-					String message = response.getPayloadString();
-					System.out.println("[AAA] PAYLOAD -" + message + "-");
-			
-	
-				}
-				
-				
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (URISyntaxException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} while (response == null);
+
 		
+		Server server = new Server();
+		server.add(new HelloResource());
+		server.start();
 		
 		// creazione thread osservatori		
 		Manager dbmanager = new Manager();
@@ -116,7 +93,7 @@ public class ExampleObserver {
 		if (dbmanager.isConnesso()) {
 			for (Board board : dbmanager.getAllBoards()) {
 				for (Device device : dbmanager.getDeviceList(board.getId())) {
-					if (device.getUri().compareTo("boh") != 0) {
+					if ((device.getUri().compareTo("boh") != 0) && (device.getActuator() == 0)) {
 	 					ResourceObserverThread observer = new ResourceObserverThread(device.getUri(), device.getUri(), device.getId());
 						observer.start();
 					}
@@ -126,7 +103,6 @@ public class ExampleObserver {
 			System.err.println("[Main] Db connection problems");	
 		}
 		dbmanager.disconnetti();
-		
 		
 
 

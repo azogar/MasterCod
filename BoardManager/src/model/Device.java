@@ -13,6 +13,10 @@ public class Device {
 		
 	}
 	
+	public Device(String type){
+		this.type=type;
+	}
+	
 	public Device(Integer id, Integer id_board, String type, String period,
 			String uri, String description, int actuator) {
 		this.id = id;

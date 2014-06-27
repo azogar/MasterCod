@@ -1,5 +1,8 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Board {
 
 	Integer id;
@@ -8,9 +11,15 @@ public class Board {
 	String position;
 	String description;
 	int active;
+	String name;
+
+	List<Device> sensors;
+	List<Device> acuators;
 
 	public Board() {
 
+		sensors = new ArrayList<Device>();
+		acuators = new ArrayList<Device>();
 	}
 
 	public Board(Integer id, String ip_addr, String room, String position,
@@ -22,6 +31,8 @@ public class Board {
 		this.position = position;
 		this.description = description;
 		this.active = active;
+		sensors = new ArrayList<Device>();
+		acuators = new ArrayList<Device>();
 	}
 
 	public Integer getId() {
@@ -71,5 +82,38 @@ public class Board {
 	public void setActive(int active) {
 		this.active = active;
 	}
+
+	public List<Device> getSensors() {
+		return sensors;
+	}
+
+	public List<Device> getAcuators() {
+		return acuators;
+	}
+
+	public void setSensors(List<Device> sensors) {
+		this.sensors = sensors;
+	}
+
+	public void setAcuators(List<Device> acuators) {
+		this.acuators = acuators;
+	}
+	
+	public void addSensors(Device sensor) {
+		this.sensors.add(sensor);
+	}
+
+	public void addAcuators(Device acuator) {
+		this.acuators.add(acuator);
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 
 }

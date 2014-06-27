@@ -46,6 +46,42 @@ public class Manager extends DBHandler {
 	public List<Board> getActiveBoards() {
 		return getBoardList("select * from board where active = 1");
 	}
+	
+	public Integer existIpBoard(String ip_addr) {
+		Integer pk = null;
+		String query = "select * from board where ip_addr = ?";
+		try {
+			PreparedStatement stmt = getConnection().prepareStatement(query);
+			stmt.setString(1, ip_addr);
+			ResultSet rs = stmt.executeQuery();
+			
+			rs.next();			
+			pk = rs.getInt(1);
+			
+			rs.close();
+		} catch (SQLException e) {
+		}
+		return pk;
+
+	}
+
+	public Integer existIpDevice(String uri) {
+		Integer pk = null;
+		String query = "select * from device where uri = ?";
+		try {
+			PreparedStatement stmt = getConnection().prepareStatement(query);
+			stmt.setString(1, uri);
+			ResultSet rs = stmt.executeQuery();
+			
+			rs.next();			
+			pk = rs.getInt(1);
+			
+			rs.close();
+		} catch (SQLException e) {
+		}
+		return pk;
+
+	}
 
 	public List<Board> getAllBoards() {
 		return getBoardList("select * from board");
@@ -331,6 +367,120 @@ public class Manager extends DBHandler {
 			return false;
 
 		}
+	}
+	
+	public List<Board> getBoardListByRoom(String room){
+		List<Board> result = new ArrayList<Board>();
+		String query = "SELECT b.id,b.name, d.type, d.actuator FROM device d, board b where b.id=d.id_board and active=1 and b.room='"+room+"'";
+		Board tmp = new Board();
+		int currentId = -1;
+		try {
+			PreparedStatement stmt = getConnection().prepareStatement(query);
+			ResultSet rs = stmt.executeQuery();
+			while (rs.next()) {
+				
+				int id = rs.getInt(1);
+				if(id==currentId){
+					Device d = new Device(rs.getString(3));
+					if(rs.getInt(4)==0)tmp.addSensors(d);
+					else tmp.addAcuators(d);
+				}
+				else{
+					if(currentId!=-1)
+					result.add(tmp);
+					tmp = new Board();
+					tmp.setId(id);
+					tmp.setName(rs.getString(2));
+					currentId = id;
+					Device d = new Device(rs.getString(3));
+					if(rs.getInt(4)==0)tmp.addSensors(d);
+					else tmp.addAcuators(d);
+				}
+
+			}
+			if(currentId!=-1)result.add(tmp);
+			rs.close();
+		} catch (SQLException e) {
+		}
+		return result;
+	}
+	
+	public String getMeasurements(String room, String deviceType, int limit){
+		String query = "SELECT m.timestamp, m.value FROM measurement m, device d, board b where b.room= ? and d.id_board=b.id and d.type= ? and d.id=m.id_device limit "+limit;
+		String result = "";
+		try {
+			PreparedStatement preparedStatement = getConnection()
+					.prepareStatement(query);
+			preparedStatement.setString(1, room);
+			preparedStatement.setString(2, deviceType);
+			ResultSet rs = preparedStatement.executeQuery();
+			while (rs.next()) {
+				result=result+rs.getString(2)+",";
+			}
+
+		} catch (SQLException e) {
+			
+		}
+		
+		
+		return result.substring(0,result.length()-1);
+		
+	}
+	
+	
+	public int[] getValoriSopraSoglia(String room, String deviceType,int min, int max){
+		int[] result = new int[3];
+		String query = "SELECT count(*) FROM measurement m, device d, board b where b.room=? and d.id_board=b.id and d.type=? and d.id=m.id_device and m.value < "+min;
+		try {
+			PreparedStatement preparedStatement = getConnection()
+					.prepareStatement(query);
+			preparedStatement.setString(1, room);
+			preparedStatement.setString(2, deviceType);
+			ResultSet rs = preparedStatement.executeQuery();
+			while (rs.next()) {
+				result[0]=rs.getInt(1);
+			}
+
+		} catch (SQLException e) {
+			
+		}
+		
+		query = "SELECT count(*) FROM measurement m, device d, board b where b.room=? and d.id_board=b.id and d.type=? and d.id=m.id_device and m.value>"+min+" and m.value <="+max;
+		try {
+			PreparedStatement preparedStatement = getConnection()
+					.prepareStatement(query);
+			preparedStatement.setString(1, room);
+			preparedStatement.setString(2, deviceType);
+			ResultSet rs = preparedStatement.executeQuery();
+			while (rs.next()) {
+				result[1]=rs.getInt(1);
+			}
+
+		} catch (SQLException e) {
+			
+		}
+		
+		query = "SELECT count(*) FROM measurement m, device d, board b where b.room=? and d.id_board=b.id and d.type=? and d.id=m.id_device and m.value>"+max;
+		try {
+			PreparedStatement preparedStatement = getConnection()
+					.prepareStatement(query);
+			preparedStatement.setString(1, room);
+			preparedStatement.setString(2, deviceType);
+			ResultSet rs = preparedStatement.executeQuery();
+			while (rs.next()) {
+				result[2]=rs.getInt(1);
+			}
+
+		} catch (SQLException e) {
+			
+		}
+		
+		System.out.println(result[0]);
+		System.out.println(result[1]);
+		System.out.println(result[2]);
+		return result;
+	
+	
 	}
 
 }
