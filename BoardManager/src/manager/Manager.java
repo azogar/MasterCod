@@ -160,6 +160,22 @@ public class Manager extends DBHandler {
 		return result;
 	}
 
+	public boolean updateBoardActivation(Integer board_id, Integer active) {
+		String query = "update board set active = ? where id = ?";
+		try {
+			PreparedStatement preparedStatement = getConnection()
+					.prepareStatement(query);
+			preparedStatement.setInt(1, active);
+			preparedStatement.setInt(2, board_id);
+			preparedStatement.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+
+	}
+	
 	public boolean updateBoardInfo(BoardInfo b) {
 		String query = "update board_info"
 				+ " set battery_level = ?, last_access = ? where id_board = ?";

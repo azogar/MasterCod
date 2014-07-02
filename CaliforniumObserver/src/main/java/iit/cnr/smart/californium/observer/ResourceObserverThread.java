@@ -45,6 +45,10 @@ public class ResourceObserverThread extends Thread {
 		this.tryal = 0;
 	}
 	
+	public Integer getDeviceId() {
+		return this.deviceid;
+	}
+	
 	@Override
 	public void run() {
 		this.setName("ThreadObserver-" + hostname);

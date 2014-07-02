@@ -15,12 +15,38 @@ import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
 import ch.ethz.inf.vs.californium.coap.Request;
 import ch.ethz.inf.vs.californium.coap.Response;
 import ch.ethz.inf.vs.californium.network.Exchange;
+import ch.ethz.inf.vs.californium.server.resources.DiscoveryResource;
+import ch.ethz.inf.vs.californium.server.resources.Resource;
 import ch.ethz.inf.vs.californium.server.resources.ResourceBase;
 
 public class HelloResource extends ResourceBase {
+	private Resource discovery;
+	private Vector<ResourceObserverThread> devices;
+	
+	
     public HelloResource() {
-        super("hello");
-        getAttributes().setTitle("Hello Resource");
+        this("hello");
+    }
+
+    public HelloResource(String name) {
+        super(name);
+        devices = new Vector<ResourceObserverThread>();
+        discovery = new ResourceBase("disco") {
+            @Override
+            public void handleGET(Exchange exchange) {
+            	StringBuilder builder = new StringBuilder();
+            	
+            	for (ResourceObserverThread device : devices) {
+            		builder.append(String.valueOf(device));
+            		builder.append("\n");
+            	}
+            	
+            	exchange.respond(String.valueOf(builder));
+            }
+       	
+        };
+        add(discovery);
+        getAttributes().setTitle(name + " Resource");
     }
     
     @Override
@@ -32,34 +58,50 @@ public class HelloResource extends ResourceBase {
     	Manager dbmanager = new Manager();
 		dbmanager.connetti();
 		if (dbmanager.isConnesso()) {
+			Board board;
 			Integer board_id = dbmanager.existIpBoard(hostname);
-			if (board_id == null) {
-				Board board = new Board(0, hostname, "aula10", "defaultposition", "defaultdescprition", 1);
+			if (board_id == null) {		
+				board = new Board(0, hostname, "aula10", "defaultposition", "defaultdescprition", 0);
 				board_id = dbmanager.createBoard(board);
+			} else {
+				board = dbmanager.getBoard(board_id);
 			}
-	    	System.out.println(ExampleObserver.now() + " [HelloResource] Board con id: " + board_id + " Richiedo device");
 			
-	    	// chiedere device
-			Vector<Device> devices = askForDevices(hostname, board_id);
-			System.out.println(ExampleObserver.now() + " [HelloResource] Board id: " + board_id + " Trovati device: "+ devices.size());
-			for (Device device : devices) {
-				if (dbmanager.existIpDevice(device.getUri()) == null) {
-					Integer device_id = dbmanager.createDevice(device);
-					if (device.getActuator() == 0) {
-	 					ResourceObserverThread observer = new ResourceObserverThread(device.getUri(), device.getUri(), device_id);
-						observer.start();
+			if (board.getActive() == 0) {
+		    	System.out.println(ExampleObserver.now() + " [HelloResource] Board con id: " + board_id + " Richiedo device");
+				dbmanager.updateBoardActivation(board_id, 1);
+		    	
+		    	// chiedere device
+				Vector<Device> devices = askForDevices(hostname, board_id);
+				System.out.println(ExampleObserver.now() + " [HelloResource] Board id: " + board_id + " Trovati device: "+ devices.size());
+				for (Device device : devices) {
+					Integer device_id = dbmanager.existIpDevice(device.getUri());
+					if (dbmanager.existIpDevice(device.getUri()) == null) {
+						device_id = dbmanager.createDevice(device);
 					}
+					
+					boolean find = false;
+					for (ResourceObserverThread thread : this.devices) {
+						if (thread.getDeviceId().compareTo(device_id) == 0)
+							find = true;
+					}
+					
+					if ((device.getActuator() == 0) && (!find)) {
+	 					ResourceObserverThread observer = new ResourceObserverThread(device.getUri(), device.getUri(), device_id);
+						this.devices.add(observer);
+	 					observer.start();
+					}
+
 				}
+				
+			} else {
+		    	System.out.println(ExampleObserver.now() + " [HelloResource] Board con id: " + board_id + " gia attivata.");
 			}
 		}
 		dbmanager.disconnetti();
 		
-    	
-    	
     	// gestire device
-    	
-    	
-        exchange.respond("Hello World!");
+        exchange.respond("Request handled.");
     }
     
 	private Vector<Device> askForDevices(String hostname, Integer board_id) {
@@ -104,4 +146,10 @@ public class HelloResource extends ResourceBase {
 		}
 		return devices;
 	}
+	
+	
+	public Resource getDiscovery() {
+		return this.discovery;
+	}
+	
 }
