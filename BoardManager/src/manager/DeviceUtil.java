@@ -47,6 +47,7 @@ public class DeviceUtil {
 		if(type.contains("sound"))return SOUND;
 		if(type.contains("power_meter"))return POWER_METER;
 		if(type.contains("relay"))return RELAY;
+		if(type.contains("fan"))return RELAY;
 		if(type.contains("dimmer"))return DIMMER;
 		return "";		
 	}
