@@ -21,6 +21,7 @@ import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
 import ch.ethz.inf.vs.californium.coap.Request;
 import ch.ethz.inf.vs.californium.coap.Response;
 import ch.ethz.inf.vs.californium.network.Exchange;
+import ch.ethz.inf.vs.californium.server.Server;
 import ch.ethz.inf.vs.californium.server.resources.DiscoveryResource;
 import ch.ethz.inf.vs.californium.server.resources.ResourceBase;
 
@@ -32,10 +33,6 @@ public class UselessResource extends ResourceBase {
     
     @Override
     public void handleGET(Exchange exchange) {
-     	System.out.println(ExampleObserver.now() + " [UselessResource] Ricevuta richiesta Inutile");
-
-    	
-    	
         exchange.respond("Hello World!");
     }
     
@@ -48,7 +45,7 @@ public class UselessResource extends ResourceBase {
 			Request request = Request.newGet();
 //			request.setURI(new URI("coap://[::1]:5683/.well-known/core"));
 			//request.setURI(new URI("coap://[ff6f::c30c:0:0:1]:5683/.well-known/core"));
-		    request.setURI(new URI("coap://[ff06::fd]:5683/disco"));
+		    request.setURI(new URI("coap://[ff06::fd]:5683/hello/disco"));
 			request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
 			request.getOptions().setBlock2(BlockOption.size2Szx(64), false, 0);
 			request.setPayload("");
@@ -72,5 +69,9 @@ public class UselessResource extends ResourceBase {
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
+    	/*
+    	Server server = new Server();
+		server.add(new UselessResource("hello"));
+		server.start();*/
     }
 }

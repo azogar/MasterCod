@@ -43,7 +43,7 @@ public class DeviceUtil {
 		if(type.contains("co2"))return CO2;
 		if(type.contains("co"))return CO;
 		if(type.contains("light"))return LIGHT;
-		if(type.contains("move"))return MOVE;
+		if(type.contains("motion"))return MOVE;
 		if(type.contains("sound"))return SOUND;
 		if(type.contains("power_meter"))return POWER_METER;
 		if(type.contains("relay"))return RELAY;
