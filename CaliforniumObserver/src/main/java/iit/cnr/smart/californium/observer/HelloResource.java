@@ -150,8 +150,8 @@ public class HelloResource extends ResourceBase {
 			            	StringBuilder builder = new StringBuilder();
 			            	
 			            	builder.append(token); 
-							builder.append(";uri=\""+ device.getUri() +"\"");
-							builder.append(";type=\""+ device.getType() +"\"");
+							builder.append("; uri=\""+ device.getUri() +"\"");
+							builder.append("; type=\""+ device.getType() +"\"");
 							
 							if (!resources.contains(String.valueOf(builder)))
 								resources.add(String.valueOf(builder));
