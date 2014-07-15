@@ -11,6 +11,7 @@ import manager.Manager;
 import model.Board;
 import model.Device;
 import ch.ethz.inf.vs.californium.coap.BlockOption;
+import ch.ethz.inf.vs.californium.coap.CoAP.ResponseCode;
 import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
 import ch.ethz.inf.vs.californium.coap.Request;
 import ch.ethz.inf.vs.californium.coap.Response;
@@ -22,7 +23,7 @@ import ch.ethz.inf.vs.californium.server.resources.ResourceBase;
 public class HelloResource extends ResourceBase {
 	private Resource discovery;
 	private Vector<ResourceObserverThread> devices;
-	
+	private Vector<String> resources;
 	
     public HelloResource() {
         this("hello");
@@ -31,17 +32,22 @@ public class HelloResource extends ResourceBase {
     public HelloResource(String name) {
         super(name);
         devices = new Vector<ResourceObserverThread>();
+        resources = new Vector<String>();
         discovery = new ResourceBase("disco") {
             @Override
             public void handleGET(Exchange exchange) {
             	StringBuilder builder = new StringBuilder();
             	
-            	for (ResourceObserverThread device : devices) {
+            	builder.append("</.well-known/core>;bd=\"aaaa::c30c:0:0:4\"");
+            	for (String device : resources) {
+            		builder.append(",");
             		builder.append(String.valueOf(device));
-            		builder.append("\n");
             	}
             	
-            	exchange.respond(String.valueOf(builder));
+            	Response res = new Response(ResponseCode.CONTENT);
+            	res.setPayload(String.valueOf(builder));
+    			res.getOptions().setContentFormat(MediaTypeRegistry.APPLICATION_LINK_FORMAT);
+            	exchange.respond(res);
             }
        	
         };
@@ -49,6 +55,13 @@ public class HelloResource extends ResourceBase {
         getAttributes().setTitle(name + " Resource");
     }
     
+    /*
+    </.well-known/core>;ct=40,
+    </sensors/periodic_light>;title="Periodic_light"; Observable resource,
+    </sensors/periodic_sound>;title="Periodic_sound"; Observable resource,
+    </actuators/fan>;title="Fan, PUT mode=on|off",
+    </sensors/periodic_temperature>;title="Periodic_temperature"; Observable resource
+    */
     @Override
     public void handleGET(Exchange exchange) {
     	String hostname = String.valueOf(exchange.getCurrentRequest().getSource()).substring(1);
@@ -134,6 +147,8 @@ public class HelloResource extends ResourceBase {
 						
 						if (sensor || actuator) {
 							Device device = new Device(0, board_id, DeviceUtil.getType(token), observable?"10":"0", "coap://[" + hostname + "]:5683" + dinamicuri, "defaultdescription", actuator?1:0);
+							if (!resources.contains(token))
+								resources.add(token);
 							devices.add(device);
 						}
 					}
