@@ -147,8 +147,14 @@ public class HelloResource extends ResourceBase {
 						
 						if (sensor || actuator) {
 							Device device = new Device(0, board_id, DeviceUtil.getType(token), observable?"10":"0", "coap://[" + hostname + "]:5683" + dinamicuri, "defaultdescription", actuator?1:0);
-							if (!resources.contains(token))
-								resources.add(token);
+			            	StringBuilder builder = new StringBuilder();
+			            	
+			            	builder.append(token); 
+							builder.append(";uri=\""+ device.getUri() +"\"");
+							builder.append(";type=\""+ device.getType() +"\"");
+							
+							if (!resources.contains(String.valueOf(builder)))
+								resources.add(String.valueOf(builder));
 							devices.add(device);
 						}
 					}
